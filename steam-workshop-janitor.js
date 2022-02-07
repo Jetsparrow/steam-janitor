@@ -6,6 +6,8 @@
 // @version 0.0.1
 // @grant GM_setValue
 // @grant GM_getValue
+// @updateURL   https://raw.githubusercontent.com/Jetsparrow/steam-workshop-janitor/main/steam-workshop-janitor.js
+// @downloadURL https://raw.githubusercontent.com/Jetsparrow/steam-workshop-janitor/main/steam-workshop-janitor.js
 // ==/UserScript==
 
 const selectors = {
