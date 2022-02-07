@@ -1,7 +1,9 @@
 # Steam Workshop Janitor
 _A userscript that makes browsing through thousands of mods viable_
 
-**N.B.: this is a very crude, hacked together alpha. It doesn't even have a way to undo the filtering yet.**
+## [Install 0.0.1](https://github.com/Jetsparrow/steam-workshop-janitor/raw/main/steam-workshop-janitor.user.js)
+
+**N.B.: this is a very crude, hacked together proof of concept. It doesn't even have a way to undo the filtering yet.**
 
 ## Filter mods
 
