@@ -1,5 +1,4 @@
-https://user-images.githubusercontent.com/37241560/153673942-b35b53e9-4c88-4695-8631-855243251740.mp4
-
+<video src="https://user-images.githubusercontent.com/37241560/153673942-b35b53e9-4c88-4695-8631-855243251740.mp4" style="max-width: 730px;"></video>
 ## [Steam Janitor v0.0.3-alpha - install](https://github.com/Jetsparrow/steam-janitor/raw/main/steam-janitor.user.js)
 _Requires a userscript extension for your browser, e.g. [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=en)_
 
