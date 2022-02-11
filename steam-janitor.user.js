@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name Steam Janitor
+// @namespace jetsparrow-steam-janitor
+// @author Jetsparrow
 // @description Hide unwanted user content in browse view, endless scrolling
 // @match *://*.steamcommunity.com/workshop/browse/*
 // @run-at document-end
-// @version 0.0.2
+// @version 0.0.3
 // @grant GM_setValue
 // @grant GM_getValue
-// @grant GM_listValues
-// @updateURL   https://raw.githubusercontent.com/Jetsparrow/steam-janitor/main/steam-janitor.js
-// @downloadURL https://raw.githubusercontent.com/Jetsparrow/steam-janitor/main/steam-janitor.js
+// @downloadURL https://jetsparrow.github.io/steam-janitor/steam-janitor.user.js
 // ==/UserScript==
 
 const addGlobalStyle = (doc, css) => {
@@ -42,30 +42,59 @@ const onVisible = (element, callback) => {
 
     observer.observe(element);
 };
-const selectors = {
+const selector = {
     PAGING_INFO: ".workshopBrowsePagingWithBG",
     ITEM_CONTAINER: ".workshopBrowseItems .workshopItemPreviewHolder",
     ITEMS_CONTAINER: ".workshopBrowseItems",
     ITEMS_HOVERS: ".workshopBrowseItems script",
     NEXT_BUTTON: ".workshopBrowsePagingControls .pagebtn:last-child",
     PAGINATOR: ".workshopBrowsePagingControls",
-    FOOTER: ".workshopBrowsePaging"
+    PAGE_INFO: ".workshopBrowsePagingInfo",
+    FOOTER: ".workshopBrowsePaging",
 };
 
-const unhiddenClass = "janitorItem";
-const hiddenFilteredClass = "janitorItemHidden";
-const hiddenUnfilteredClass = "janitorItemHiddenUnfiltered";
-const hideButtonClass = "janitorHideButton";
-const showButtonClass = "janitorShowButton";
+const elemId = {
+    scrollTarget: "footer",
+    filterToggleCheckbox: "janitorFilterToggleCheckbox",
+    filterToggleOn: "janitorFilterOnIcon",
+    filterToggleOff: "janitorFilterOffIcon",
+};
+
+const cssClass = {
+    unhidden: "janitorItem",
+    hiddenFiltered: "janitorItemHidden",
+    hiddenUnfiltered: "janitorItemHiddenUnfiltered",
+    hideButton: "janitorHideButton",
+    showButton: "janitorShowButton",
+    filterToggle: "janitorFilterToggle",
+    hideButton: "janitorhideButton"
+};
+
+const resource = {
+    iconEyeOpen:"https://jetsparrow.github.io/steam-janitor/res/filter_toggle_open.png",
+    iconEyeClosed:"https://jetsparrow.github.io/steam-janitor/res/filter_toggle_closed.png",
+    btnHide:"https://jetsparrow.github.io/steam-janitor/res/janitor_hide.png",
+    btnHideHover:"https://jetsparrow.github.io/steam-janitor/res/janitor_hide_hover.png",
+    btnUnhide:"https://jetsparrow.github.io/steam-janitor/res/janitor_unhide.png",
+    btnUnhideHover:"https://jetsparrow.github.io/steam-janitor/res/janitor_unhide_hover.png",
+};
 
 const janitorCss = `
-.${hiddenFilteredClass} { display:none !important; }
-.${hiddenUnfilteredClass} {opacity: 0.25;}
-.${hiddenUnfilteredClass} .${showButtonClass} { display:inline !important; }
-.${hiddenUnfilteredClass} .${hideButtonClass} { display:none !important; }
-.${unhiddenClass} .${showButtonClass} { display:none !important; }
-.${unhiddenClass} .${hideButtonClass} { display:inline !important; }
+.${cssClass.hiddenFiltered} {display:none !important; }
+.${cssClass.hiddenUnfiltered} img {opacity: 0.25;}
+.${cssClass.hideButton} {width:25px; height:25px;}
+.${cssClass.hiddenUnfiltered} .${cssClass.hideButton}:hover {background-image:url("${resource.btnUnhideHover}")}
+.${cssClass.hiddenUnfiltered} .${cssClass.hideButton} {background-image:url("${resource.btnUnhide}")}
+.${cssClass.unhidden} .${cssClass.hideButton}:hover {background-image:url("${resource.btnHideHover}")}
+.${cssClass.unhidden} .${cssClass.hideButton} {background-image:url("${resource.btnHide}")}
+.${cssClass.filterToggle} * { vertical-align: middle; }
+.workshopItem .${cssClass.hideButton} { visibility: hidden; position: absolute; top: 4px; right: 6px; }
+.workshopItem:hover .${cssClass.hideButton} { visibility: visible; position: absolute; top: 4px; right: 6px;}
 `;
+
+const setting = {
+    filterEnabled: "janitorFilterEnabled"
+};
 
 const defaultModData = () => {
     let d = new Object();
@@ -78,41 +107,42 @@ const loadModData = (modId) => {
 }
 const saveModData = (modId, data) => GM_setValue("modid:" + modId, JSON.stringify(data));
 
-const updateHiddenClass = (doc, modId) => {
+const updateHiddenClass = (doc, modId, filterOn) => {
     var container = doc.getElementById(modId)?.parentElement?.parentElement;
     if (!container) return;
     const d = loadModData(modId);
-    container.classList.remove(unhiddenClass);
-    container.classList.remove(hiddenFilteredClass);
-    container.classList.remove(hiddenUnfilteredClass);
+    container.classList.remove(cssClass.unhidden);
+    container.classList.remove(cssClass.hiddenFiltered);
+    container.classList.remove(cssClass.hiddenUnfiltered);
 
-    if (!d.hide) container.classList.add(unhiddenClass);
-    else if (window.janitorFilterEnabled) container.classList.add(hiddenFilteredClass);
-    else container.classList.add(hiddenUnfilteredClass);
+    if (!d.hide) container.classList.add(cssClass.unhidden);
+    else if (filterOn) container.classList.add(cssClass.hiddenFiltered);
+    else container.classList.add(cssClass.hiddenUnfiltered);
 }
 
-const setHidden = (doc, modId, isHidden) => {
+const toggleHidden = (doc, modId) => {
     var d = loadModData(modId);
-    d.hide = isHidden;
+    d.hide = !d.hide;
     saveModData(modId, d);
-    updateHiddenClass(doc, modId);
+    const filterOn = GM_getValue(setting.filterEnabled);
+    updateHiddenClass(doc, modId, filterOn);
 }
 
 const addHideButtons = (doc, container, id) => {
-    const hide = htmlToElement(doc, `<a class="${hideButtonClass}">hide</a>`)
-    hide.onclick = () => {setHidden(document, id, true);};
-    container.prepend(hide);
-
-    const show = htmlToElement(doc, `<a class="${showButtonClass}">show</a>`)
-    show.onclick = () => {setHidden(document, id, false);};
-    container.prepend(show);
+    const controls = htmlToElement(doc, `<div class="${cssClass.hideButton}"> </>`);
+    controls.onclick = (e) => {
+        e.cancelBubble = true;
+        toggleHidden(document, id);
+    };
+    container.append(controls);
 }
 
 const processContainers = (doc) => {
-    for (var el of doc.querySelectorAll(selectors.ITEM_CONTAINER)){
+    const filterOn = GM_getValue(setting.filterEnabled);
+    for (var el of doc.querySelectorAll(selector.ITEM_CONTAINER)){
         const container = el.parentElement.parentElement;
         const id = el.id;
-        updateHiddenClass(doc, id);
+        updateHiddenClass(doc, id, filterOn);
 
         if (container.janitorButtonsAdded) continue;
         container.janitorButtonsAdded = true;
@@ -128,14 +158,14 @@ const loadNextPage = (url) => {
         const newDoc = parser.parseFromString(html, "text/html");
         processContainers(newDoc);
 
-        const newMods = newDoc.querySelectorAll(selectors.ITEM_CONTAINER);
-        const modContainer = document.querySelector(selectors.ITEMS_CONTAINER);
+        const newMods = newDoc.querySelectorAll(selector.ITEM_CONTAINER);
+        const modContainer = document.querySelector(selector.ITEMS_CONTAINER);
         for (const mod of newMods) {
             const container = mod.parentElement.parentElement;
             modContainer.appendChild(container);
         }
 
-        const scripts = newDoc.querySelectorAll(selectors.ITEMS_HOVERS);
+        const scripts = newDoc.querySelectorAll(selector.ITEMS_HOVERS);
         for (const newScript of scripts){
             const matches = newScript.innerHTML.match(/(sharedfile_\d+)/);
             if (matches.length < 1) continue;
@@ -144,48 +174,56 @@ const loadNextPage = (url) => {
             eval("try{ "+ newScript.innerHTML + " } catch {} ");
         }
 
-        const nextUrl = newDoc.querySelector(selectors.NEXT_BUTTON)?.getAttribute("href");
-        const footer = document.getElementById("footer");
+        const nextUrl = newDoc.querySelector(selector.NEXT_BUTTON)?.getAttribute("href");
+        const footer = document.getElementById(elemId.scrollTarget);
         if (nextUrl) onVisible(footer, loadNextPage.bind(null, nextUrl));
         window.history.pushState("", "", url);
     });
 };
 
 function toggleFilter(checkbox) {
-    window.janitorFilterEnabled = checkbox.checked;
-    GM_setValue("janitorFilterEnabled", checkbox.checked);
+    GM_setValue(setting.filterEnabled, checkbox.checked);
     const doc = checkbox.ownerDocument;
+    doc.getElementById(elemId.filterToggleOff).hidden = checkbox.checked;
+    doc.getElementById(elemId.filterToggleOn).hidden = !checkbox.checked;
     processContainers(doc);
 }
 
 (() => {
     const load = () => {
-
-        console.log(GM_listValues());
-
         addGlobalStyle(document, janitorCss);
 
-        const filterToggleRoot = document.querySelector(selectors.PAGING_INFO);
+        document.querySelector(selector.PAGE_INFO)?.remove();
+        const filterToggleRoot = document.querySelector(selector.PAGING_INFO);
         const toggle = htmlToElement(document, `
-<div>
-  <input type="checkbox" id="janitorFilterToggle">
-  <label for="janitorFilterToggle">Filter</label>
+<div class="${cssClass.filterToggle}">
+  &nbsp;
+  <input type="checkbox" id="${elemId.filterToggleCheckbox}">
+  &nbsp;
+  <label for="${elemId.filterToggleCheckbox}">
+      <img src="${resource.iconEyeOpen}" id="${elemId.filterToggleOff}">
+      <img src="${resource.iconEyeClosed}" id="${elemId.filterToggleOn}">
+  </label>
+  &nbsp;
 </div>
 `);
         const checkbox = toggle.children[0];
-        checkbox.checked = window.janitorFilterEnabled = GM_getValue("janitorFilterEnabled", true);
+        checkbox.checked = GM_getValue(setting.filterEnabled, true);
         checkbox.onclick = () => toggleFilter(checkbox);
         filterToggleRoot.prepend(toggle);
+        toggleFilter(checkbox);
         processContainers(document);
 
-        const nextUrl = document.querySelector(selectors.NEXT_BUTTON)?.getAttribute("href");
+        const nextUrl = document.querySelector(selector.NEXT_BUTTON)?.getAttribute("href");
         if (!nextUrl) {
-            console.error(`Could not find nextUrl through "${selectors.NEXT_BUTTON}"`);
+            console.error(`Could not find nextUrl through "${selector.NEXT_BUTTON}"`);
             return;
         }
 
         loadNextPage(nextUrl);
-        document.querySelector(selectors.PAGINATOR)?.remove();
+
+        document.querySelector(selector.PAGINATOR)?.remove();
+
     };
 
     load();

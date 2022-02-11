@@ -1,13 +1,17 @@
-## [Install 0.0.2](https://github.com/Jetsparrow/steam-janitor/raw/main/steam-janitor.user.js)
-_Requires a userscript extension for your browser, like [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=en)_
+https://user-images.githubusercontent.com/37241560/153673942-b35b53e9-4c88-4695-8631-855243251740.mp4
 
-**N.B.: this is a very crude alpha. Developed and tested in Google Chrome**
+## [Steam Janitor v0.0.3-alpha - install](https://github.com/Jetsparrow/steam-janitor/raw/main/steam-janitor.user.js)
+_Requires a userscript extension for your browser, e.g. [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=en)_
 
-## Filter mods
+**N.B.: this is an early alpha. Tested only in Tampermonkey on Google Chrome**
 
-Adds a little "hide" button to any workshop browse page. Use it, and you will no longer see the hundreds of miscellaneous translations to laguages you don't know, obsolete mods, or gachimuchi memes.
+## Filter unwanted items
 
-The userscripts adds a "filter" checkbox to the top paging controls, allowing you to switch between the filtered and unfiltered view.
+A "hide" button is added to every item on a workshop browse page.  
+Clicking it will hide the item forever - until you turn off the filter and unhide it.
+Translations to laguages you don't know, obsolete mods, gachimuchi memes, and mods that are just not quite your cup of tea - hide once and never see them again.
+
+The "filter" checkbox at the top paging controls allows you to switch between the filtered and unfiltered view.
 
 ## Endless scrolling
 
