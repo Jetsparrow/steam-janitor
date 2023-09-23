@@ -1,13 +1,15 @@
 <img src="https://user-images.githubusercontent.com/37241560/153679204-15e543d6-f45d-401c-90da-591694240515.png">
 
-## [Steam Janitor v0.0.3-alpha - install](https://github.com/Jetsparrow/steam-janitor/raw/main/steam-janitor.user.js)
+# [Steam Janitor v0.0.4-alpha - install](https://github.com/Jetsparrow/steam-janitor/raw/main/steam-janitor.user.js)
 _Requires a userscript extension for your browser, e.g. [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=en)_
 
 **N.B.: this is an early alpha. Tested only in Tampermonkey on Google Chrome**
 
-## Demo
+# How to use
+Navigate to the browse tab of your game's workshop (`steamcommunity.com/workshop/browse/?appid=###`) and use the new buttons on the workshop items.
 <video src="https://user-images.githubusercontent.com/37241560/153673942-b35b53e9-4c88-4695-8631-855243251740.mp4" autoplay muted loop style="max-width: 480px;" ></video>
 
+# Features
 ## Filter unwanted items
 
 A "hide" button is added to every item on a workshop browse page.  
@@ -19,3 +21,7 @@ The "filter" checkbox at the top paging controls allows you to switch between th
 ## Endless scrolling
 
 After the filter runs its course, you will be left with barely any mods. Endless scrolling fixes that.
+
+## Download button
+
+Download the workshop item directly from the web as a .zip archive
