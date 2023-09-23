@@ -2,12 +2,15 @@
 // @name Steam Janitor
 // @namespace jetsparrow-steam-janitor
 // @author Jetsparrow
-// @description Hide unwanted user content in browse view, endless scrolling
+// @description Hide unwanted user content in browse view, endless scrolling, downloads
 // @match *://*.steamcommunity.com/workshop/browse/*
 // @run-at document-end
-// @version 0.0.3
+// @version 0.0.4
 // @grant GM_setValue
 // @grant GM_getValue
+// @grant GM_xmlhttpRequest
+// @grant GM_download
+// @connect ggntw.com
 // @downloadURL https://jetsparrow.github.io/steam-janitor/steam-janitor.user.js
 // ==/UserScript==
 
@@ -42,6 +45,7 @@ const onVisible = (element, callback) => {
 
     observer.observe(element);
 };
+
 const selector = {
     PAGING_INFO: ".workshopBrowsePagingWithBG",
     ITEM_CONTAINER: ".workshopBrowseItems .workshopItemPreviewHolder",
@@ -67,7 +71,7 @@ const cssClass = {
     hideButton: "janitorHideButton",
     showButton: "janitorShowButton",
     filterToggle: "janitorFilterToggle",
-    hideButton: "janitorhideButton"
+    downloadButton: "janitorDownloadButton"
 };
 
 const resource = {
@@ -77,19 +81,29 @@ const resource = {
     btnHideHover:"https://jetsparrow.github.io/steam-janitor/res/janitor_hide_hover.png",
     btnUnhide:"https://jetsparrow.github.io/steam-janitor/res/janitor_unhide.png",
     btnUnhideHover:"https://jetsparrow.github.io/steam-janitor/res/janitor_unhide_hover.png",
+    btnDownload:"https://jetsparrow.github.io/steam-janitor/res/janitor_download.png",
+    btnDownloadHover:"https://jetsparrow.github.io/steam-janitor/res/janitor_download_hover.png",
 };
 
 const janitorCss = `
+.${cssClass.filterToggle} * { vertical-align: middle; }
+
 .${cssClass.hiddenFiltered} {display:none !important; }
 .${cssClass.hiddenUnfiltered} img {opacity: 0.25;}
+
 .${cssClass.hideButton} {width:25px; height:25px;}
 .${cssClass.hiddenUnfiltered} .${cssClass.hideButton}:hover {background-image:url("${resource.btnUnhideHover}")}
 .${cssClass.hiddenUnfiltered} .${cssClass.hideButton} {background-image:url("${resource.btnUnhide}")}
 .${cssClass.unhidden} .${cssClass.hideButton}:hover {background-image:url("${resource.btnHideHover}")}
 .${cssClass.unhidden} .${cssClass.hideButton} {background-image:url("${resource.btnHide}")}
-.${cssClass.filterToggle} * { vertical-align: middle; }
-.workshopItem .${cssClass.hideButton} { visibility: hidden; position: absolute; top: 4px; right: 6px; }
+.workshopItem .${cssClass.hideButton} { visibility: hidden; }
 .workshopItem:hover .${cssClass.hideButton} { visibility: visible; position: absolute; top: 4px; right: 6px;}
+
+.${cssClass.downloadButton} {width:25px; height:25px;}
+.${cssClass.downloadButton}:hover {background-image:url("${resource.btnDownloadHover}")}
+.${cssClass.downloadButton} {background-image:url("${resource.btnDownload}")}
+.workshopItem .${cssClass.downloadButton} { visibility: hidden; }
+.workshopItem:hover .${cssClass.downloadButton} { visibility: visible; position: absolute; top: 4px; right: 35px;}
 `;
 
 const setting = {
@@ -101,12 +115,16 @@ const defaultModData = () => {
     d.hide = false;
     return d;
 }
+
 const loadModData = (modId) => {
     var j = GM_getValue("modid:" + modId, "");
     return j == "" ? defaultModData() : JSON.parse(j);
 }
+
 const saveModData = (modId, data) => GM_setValue("modid:" + modId, JSON.stringify(data));
 
+
+// Update classes on mod container when model changes
 const updateHiddenClass = (doc, modId, filterOn) => {
     var container = doc.getElementById(modId)?.parentElement?.parentElement;
     if (!container) return;
@@ -120,6 +138,7 @@ const updateHiddenClass = (doc, modId, filterOn) => {
     else container.classList.add(cssClass.hiddenUnfiltered);
 }
 
+// When pressing the hide/unhide button on mod container
 const toggleHidden = (doc, modId) => {
     var d = loadModData(modId);
     d.hide = !d.hide;
@@ -128,15 +147,53 @@ const toggleHidden = (doc, modId) => {
     updateHiddenClass(doc, modId, filterOn);
 }
 
-const addHideButtons = (doc, container, id) => {
-    const controls = htmlToElement(doc, `<div class="${cssClass.hideButton}"> </>`);
-    controls.onclick = (e) => {
+// When pressing the download button on mod container
+const downloadMod = (doc, modId) => {
+    const id = modId.replace("sharedfile_", "");
+    GM_xmlhttpRequest(
+    {
+        url:"https://api.ggntw.com/steam.request",
+        method: "POST",
+        data: JSON.stringify(
+        {
+            url:"https://steamcommunity.com/sharedfiles/filedetails/?id=" + id
+        }),
+        headers:
+        {
+            "Content-type": "application/json; charset=UTF-8"
+        },
+        onload: function(response)
+        {
+            if (response.status>299) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            const res = JSON.parse(response.responseText);
+            console.log(res);
+            const name = res.url.substring(res.url.lastIndexOf('/') + 1);
+            GM_download(res.url, name);
+        }
+    });
+}
+
+
+// Add hide butons to mod container
+const addJanitorButtons = (doc, container, id) => {
+    const hideButton = htmlToElement(doc, `<div class="${cssClass.hideButton}"> </>`);
+    hideButton.onclick = (e) => {
         e.cancelBubble = true;
         toggleHidden(document, id);
     };
-    container.append(controls);
+    container.append(hideButton);
+
+    const downloadButton = htmlToElement(doc, `<div class="${cssClass.downloadButton}"> </>`);
+    downloadButton.onclick = (e) => {
+        e.cancelBubble = true;
+        downloadMod(document, id);
+    };
+    container.append(downloadButton);
 }
 
+// Update all loaded mod containers, update their visibility and add janitor buttons if necessary
 const processContainers = (doc) => {
     const filterOn = GM_getValue(setting.filterEnabled);
     for (var el of doc.querySelectorAll(selector.ITEM_CONTAINER)){
@@ -146,7 +203,7 @@ const processContainers = (doc) => {
 
         if (container.janitorButtonsAdded) continue;
         container.janitorButtonsAdded = true;
-        addHideButtons(doc, container, id);
+        addJanitorButtons(doc, container, id);
     }
 }
 
@@ -181,6 +238,7 @@ const loadNextPage = (url) => {
     });
 };
 
+// When the global filter toggle is pressed
 function toggleFilter(checkbox) {
     GM_setValue(setting.filterEnabled, checkbox.checked);
     const doc = checkbox.ownerDocument;
@@ -189,6 +247,7 @@ function toggleFilter(checkbox) {
     processContainers(doc);
 }
 
+// main
 (() => {
     const load = () => {
         addGlobalStyle(document, janitorCss);
